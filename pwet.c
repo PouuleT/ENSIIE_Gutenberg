@@ -1,61 +1,126 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "pwet.h"
 
+// Check si c'est la fin des operations
 int checkEnd(FILE* matrice)
 {
-    int i=0;
     char word;
 
     word = fgetc(matrice);          // On récupère le caractère suivant
     fseek(matrice, -1, SEEK_CUR);   // On se repositionne a la position indiquee avant de commencer au cas où c'est pas la fin
     if(word == 27)                  // Si c'est le caractère "echap", c'est qu'il n'y a plus de PU/PD, on arrête
-    {
         return 1;
-    }
     else                            // Sinon on continue
         return 0;
-
 }
+
+// Allocation et initialisation d'un nouveau Vector
+Vector* newVector()
+{
+    Vector* new = malloc(sizeof(Vector));
+    return new;
+}
+
+Vector* newVectorBis(Coord *From, Coord *To, char* type)
+{
+    Vector* new = newVector();
+    if(strcmp(type,"PU")==0)
+    {
+        new->type = 1;
+    }
+    else if(strcmp(type,"PD")==0)
+    {
+        new->type = 0;
+    }
+    else
+    {
+        printf("\n!!!!!!! Type inconnu : %s, on arrete ici\n\n",type);
+        exit(-1);
+    }
+
+    copyCoord(From,&(new->a));
+    copyCoord(To,&(new->b));
+
+    return new;
+}
+
+void addVectorList(Coord *From, Coord *To, char* type, Vector** List, int size)
+{
+    List[size] = newVectorBis(From, To, type);
+}
+
+void copyCoord(Coord* From, Coord* To)
+{
+    To->x = From->x;
+    To->y = From->y;
+}
+
+// Affichage d'un Vector
+void printVector(Vector *v)
+{
+    if(v->type)
+        printf("\nPU");
+    else
+        printf("PD");
+    printf(" A[%d,%d] B[%d,%d]\n", v->a.x, v->a.y, v->b.x, v->b.y);
+}
+
+// Affichage d'un Coord
+void printCoord(Coord *a)
+{
+    printf("Coord [%d,%d]\n", a->x, a->y);
+}
+
 
 int main(int argc, char* argv[])
 {
     FILE* matrice = fopen(argv[1],"r");
     char **ptr=malloc(sizeof(char**));
     *ptr = (char*) malloc(20*sizeof(char));
+    Vector **List=malloc(sizeof(Vector**));
+    *List = (Vector*) malloc(20*sizeof(Vector*));
+    
     int ind;
-    int LTPU[2];
+    Coord OldCoord;
+    Coord TmpCoord;
     int i=0;
-    int val[10][2];
     int res[3];                 // RES => res[0] c'est le nombre rencontré
                                 //     => res[1] c'est la valeur du caractere suivant
                                 //     => res[2] c'est la position dans le fichier 
+
     ind = getWord(matrice, "LTPU");     // On cherche LTPU et on récupere sa position dans le fichier
     getNum(matrice, res, ind);          // On cherche ensuite le nombre juste après
-    LTPU[0] = res[0];
+    OldCoord.x = res[0];
     getNum(matrice, res, res[2]);       // Ainsi que celui juste apres car LTPU[X,Y]
-    LTPU[1] = res[0];
+    OldCoord.y = res[0];
 
-    printf("LTPU : %d - %d\n\n",LTPU[0],LTPU[1]);
-    do
+    printf("LTPU [%d-%d]\n\n",OldCoord.x,OldCoord.y);
+    do                                  // On passe d'action en action
     {
         i=0;
-        getAWord(matrice, ptr, res);  // On cherche ensuite un mot (normalement PD ou PU)
-        printf("\nDo a : %s\n",*ptr);
-        do{
+        getAWord(matrice, ptr, res);    // On cherche ensuite un mot (normalement PD ou PU)
+        do{                             // On passe de points en points
             getNum(matrice, res, res[2]);
-            val[i/2][i%2] = res[0];
+            TmpCoord.x = res[0];
+            //val[i][0] = res[0];
+            getNum(matrice, res, res[2]);
+            TmpCoord.y = res[0];
+            //val[i][1] = res[0];
             i++;
-        }while(res[1] ==44);    // tant qu'on ne rencontre pas de ;
-
-        printTab(val, i/2);
-    } while(checkEnd(matrice) ==0);
+            addVectorList(&OldCoord,&TmpCoord,*ptr,List, i);
+            copyCoord(&TmpCoord, &OldCoord);
+            printVector(List[i]);
+        }while(res[1] ==44);            // tant qu'on ne rencontre pas de ;
+    } while(checkEnd(matrice) ==0);     // Tant qu'on ne rencontre pas le caractere "echap"
 
     printf("\nFin du fichier\n");                                   
                                                          
     return 0;
 }
 
+// Affiche un tableau de coordonnées à partir de sa taille
 void printTab(int tab[][2], int size)
 {
     int i;
@@ -65,42 +130,6 @@ void printTab(int tab[][2], int size)
     }
 }
 
-int analyze_matrix(FILE* matrice) {
-    int end=0;
-    int k=0;
-    char c;
-
-    if(matrice == NULL) {
-        printf("Impossible d'ouvrir le fichier de matrice donne en argument\n");
-        printf("Fin du programme\n");
-        return -1;
-    }
-    else {
-        printf("Analyse du fichier de matrice ...\n ");
-        do
-        {
-            c = fgetc(matrice);
-            if(c == EOF) {
-                end = 1;
-                printf("\nFin du fichier\n");
-            }
-            else {
-                if(c == 27)
-                    printf("_");
-                else if(c == 1)
-                    printf("[]");
-                else
-                {
-                    printf("%c", c);
-                }
-                k++;
-            }
-        } while (!end);
-        printf("\nLe fichier comporte %d lignes\n", k);
-    }
-    printf("Done\n");
-    return 1;
-}
 
 int getWord(FILE* matrice, char* word)
 {
@@ -228,76 +257,108 @@ void getNum(FILE* matrice, int res[3], int pos)
 }
 
 
+//int new_matrix_analyser(FILE* matrice) {
+//    char buff_word[100];
+//    char buff_num[20];
+//    int i=0,j=0;
+//    int end=0;
+//    char c;
+//
+//    if(matrice == NULL) {
+//        printf("Impossible d'ouvrir le fichier de matrice donne en argument\n");
+//        printf("Fin du programme\n");
+//        return -1;
+//    }
+//    else {
+//        printf("Analyse du fichier de matrice ...\n ");
+//        do
+//        {
+//            c = fgetc(matrice);
+//            if(c == EOF) {
+//                end = 1;
+//                printf("\nFin du fichier\n");
+//            }
+//            else if(c >= 48 && c <=57) {
+//                buff_num[j] = c;
+//                buff_num[j+1] = '\0';
+//                j++;
+//                if(i != 0) {
+//                    printf("1 we got a string : %s\n", buff_word);
+//                    i=0;
+//                }
+//            }
+//            else if ((c >= 58 && c <= 126) || (c >=32 && c<=47 )) {
+//                buff_word[i] = c;
+//                buff_word[i+1] = '\0';
+//                i++;
+//                if(j != 0) {
+//                    printf("2 we got a number : %d\n", atoi(buff_num));
+//                    j=0;
+//                }
+//            }
+//            else if(c == 27) {
+//                printf("_");
+//                if(j != 0) {
+//                    printf("3 we got a number : %d\n", atoi(buff_num));
+//                    j=0;
+//                }
+//                else if(i != 0) {
+//                    printf("4 we got a string : %s\n", buff_word);
+//                    i=0;
+//                }
+//            }
+//            else {
+//                if(j != 0) {
+//                    printf("5 we got a number : %d\n", atoi(buff_num));
+//                    j=0;
+//                }
+//                else if(i != 0) {
+//                    printf("6 we got a string : %s\n", buff_word);
+//                    i=0;
+//                }
+//
+//                printf("unknown : %c - %d\n",c, c);
+//            }
+////            getchar();
+//        } while (!end);
+//    }
+//    return 1;
+//}
 
-
-
-
-int new_matrix_analyser(FILE* matrice) {
-    char buff_word[100];
-    char buff_num[20];
-    int i=0,j=0;
-    int end=0;
-    char c;
-
-    if(matrice == NULL) {
-        printf("Impossible d'ouvrir le fichier de matrice donne en argument\n");
-        printf("Fin du programme\n");
-        return -1;
-    }
-    else {
-        printf("Analyse du fichier de matrice ...\n ");
-        do
-        {
-            c = fgetc(matrice);
-            if(c == EOF) {
-                end = 1;
-                printf("\nFin du fichier\n");
-            }
-            else if(c >= 48 && c <=57) {
-                buff_num[j] = c;
-                buff_num[j+1] = '\0';
-                j++;
-                if(i != 0) {
-                    printf("1 we got a string : %s\n", buff_word);
-                    i=0;
-                }
-            }
-            else if ((c >= 58 && c <= 126) || (c >=32 && c<=47 )) {
-                buff_word[i] = c;
-                buff_word[i+1] = '\0';
-                i++;
-                if(j != 0) {
-                    printf("2 we got a number : %d\n", atoi(buff_num));
-                    j=0;
-                }
-            }
-            else if(c == 27) {
-                printf("_");
-                if(j != 0) {
-                    printf("3 we got a number : %d\n", atoi(buff_num));
-                    j=0;
-                }
-                else if(i != 0) {
-                    printf("4 we got a string : %s\n", buff_word);
-                    i=0;
-                }
-            }
-            else {
-                if(j != 0) {
-                    printf("5 we got a number : %d\n", atoi(buff_num));
-                    j=0;
-                }
-                else if(i != 0) {
-                    printf("6 we got a string : %s\n", buff_word);
-                    i=0;
-                }
-
-                printf("unknown : %c - %d\n",c, c);
-            }
-//            getchar();
-        } while (!end);
-    }
-    return 1;
-}
-
+//int analyze_matrix(FILE* matrice) {
+//    int end=0;
+//    int k=0;
+//    char c;
+//
+//    if(matrice == NULL) {
+//        printf("Impossible d'ouvrir le fichier de matrice donne en argument\n");
+//        printf("Fin du programme\n");
+//        return -1;
+//    }
+//    else {
+//        printf("Analyse du fichier de matrice ...\n ");
+//        do
+//        {
+//            c = fgetc(matrice);
+//            if(c == EOF) {
+//                end = 1;
+//                printf("\nFin du fichier\n");
+//            }
+//            else {
+//                if(c == 27)
+//                    printf("_");
+//                else if(c == 1)
+//                    printf("[]");
+//                else
+//                {
+//                    printf("%c", c);
+//                }
+//                k++;
+//            }
+//        } while (!end);
+//        printf("\nLe fichier comporte %d lignes\n", k);
+//    }
+//    printf("Done\n");
+//    return 1;
+//}
 
