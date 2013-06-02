@@ -2,13 +2,29 @@
 #include <stdio.h>
 #include <string.h>
 
+int checkEnd(FILE* matrice)
+{
+    int i=0;
+    char word;
+
+    word = fgetc(matrice);          // On récupère le caractère suivant
+    fseek(matrice, -1, SEEK_CUR);   // On se repositionne a la position indiquee avant de commencer au cas où c'est pas la fin
+    if(word == 27)                  // Si c'est le caractère "echap", c'est qu'il n'y a plus de PU/PD, on arrête
+    {
+        return 1;
+    }
+    else                            // Sinon on continue
+        return 0;
+
+}
+
 int main(int argc, char* argv[])
 {
     FILE* matrice = fopen(argv[1],"r");
     char **ptr=malloc(sizeof(char**));
     *ptr = (char*) malloc(20*sizeof(char));
-    printf("hey");
     int ind;
+    int LTPU[2];
     int i=0;
     int val[10][2];
     int res[3];                 // RES => res[0] c'est le nombre rencontré
@@ -16,29 +32,32 @@ int main(int argc, char* argv[])
                                 //     => res[2] c'est la position dans le fichier 
     ind = getWord(matrice, "LTPU");     // On cherche LTPU et on récupere sa position dans le fichier
     getNum(matrice, res, ind);          // On cherche ensuite le nombre juste après
-    printf("%d - %d - %d\n",res[0], res[1], res[2]);
+    LTPU[0] = res[0];
     getNum(matrice, res, res[2]);       // Ainsi que celui juste apres car LTPU[X,Y]
-    printf("%d - %d - %d\n",res[0], res[1], res[2]);
-    getAWord(matrice, ptr, res);  // On cherche ensuite un mot (normalement PD ou PU)
-    printf("Mot : %s\n",*ptr);
-    //printf("position : %d\n", res[2]); 
-    do{
-        getNum(matrice, res, res[2]);
-        val[i/2][i%2] = res[0];
-        printf("%d - %d - %d\n",res[0], res[1], res[2]);
-//        printf("%d - %d\n",(i+i)/2, i%2);
-        i++;
-    }while(res[1] ==44);
+    LTPU[1] = res[0];
 
-    printTab(val, i/2);
+    printf("LTPU : %d - %d\n\n",LTPU[0],LTPU[1]);
+    do
+    {
+        i=0;
+        getAWord(matrice, ptr, res);  // On cherche ensuite un mot (normalement PD ou PU)
+        printf("\nDo a : %s\n",*ptr);
+        do{
+            getNum(matrice, res, res[2]);
+            val[i/2][i%2] = res[0];
+            i++;
+        }while(res[1] ==44);    // tant qu'on ne rencontre pas de ;
 
-    free(*ptr);
+        printTab(val, i/2);
+    } while(checkEnd(matrice) ==0);
+
+    printf("\nFin du fichier\n");                                   
+                                                         
     return 0;
 }
 
 void printTab(int tab[][2], int size)
 {
-    printf("We do pen down :\n");
     int i;
     for(i=0;i<size;i++)
     {
