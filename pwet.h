@@ -4,6 +4,12 @@ struct Coord{
       int y;
 };
 
+typedef struct Shape Shape;
+struct Shape{
+    Coord point;
+    Shape* next;
+};
+
 typedef struct Vector Vector;
 struct Vector{
     // type :

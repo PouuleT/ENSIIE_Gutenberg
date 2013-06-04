@@ -23,6 +23,21 @@ Vector* newVector()
     return new;
 }
 
+// Allocation et initialisation d'une nouvelle Shape
+Shape* newShape()
+{
+    Shape* new = malloc(sizeof(Shape));
+    return new;
+}
+
+// Allocation et initialisation d'une nouvelle ShapeStar
+void resizeFigure(Shape** Figure, int size)
+{
+    //Shape** new = realloc(Figure,  size*sizeof(Shape*));
+    realloc(Figure,  size*sizeof(Shape*));
+    //return new;
+}
+
 Vector* newVectorBis(Coord *From, Coord *To, char* type)
 {
     Vector* new = newVector();
@@ -73,19 +88,43 @@ void printCoord(Coord *a)
     printf("Coord [%d,%d]\n", a->x, a->y);
 }
 
+void printShape(Shape *a)
+{
+    while(a->next != NULL)
+    {
+        printf("Shape [%d,%d]\n",a->point.x,a->point.y);
+        a = a->next;
+    }
+}
+
+void printFigure(Shape **a, int size)
+{
+    int i;
+    for(i=0;i<size;i++)
+    {
+        printf("Figure num %d\n",i);
+        printShape(a[i]);
+    }
+}
 
 int main(int argc, char* argv[])
 {
     FILE* matrice = fopen(argv[1],"r");
     char **ptr=malloc(sizeof(char**));
     *ptr = (char*) malloc(20*sizeof(char));
-    Vector **List=malloc(sizeof(Vector**));
-    *List = (Vector*) malloc(20*sizeof(Vector*));
+ 
+    Vector **List=malloc(sizeof(Vector**));         // Tableau de pointeur de Vector
+    *List = (Vector*) malloc(20*sizeof(Vector*));   // De taille : 20
+
+    Shape **Figure = malloc(sizeof(Shape**));       // Tableau dynamique de pointeur de Figures
     
     int ind;
     Coord OldCoord;
     Coord TmpCoord;
+    Shape* TmpShape;
     int i=0;
+    int j=0;
+    int good;
     int res[3];                 // RES => res[0] c'est le nombre rencontré
                                 //     => res[1] c'est la valeur du caractere suivant
                                 //     => res[2] c'est la position dans le fichier 
@@ -101,6 +140,20 @@ int main(int argc, char* argv[])
     {
         i=0;
         getAWord(matrice, ptr, res);    // On cherche ensuite un mot (normalement PD ou PU)
+        printf("We got : %s\n",*ptr);
+        if(strcmp(*ptr,"PD")==0)
+        {
+            printf("j = %d\n",j);
+            j++;
+            resizeFigure(*Figure, j);
+            Figure[j-1] = newShape();
+            good = 1;
+            TmpShape = Figure[j-1];
+        }
+        else
+        {
+            good = 0;
+        }
         do{                             // On passe de points en points
             getNum(matrice, res, res[2]);
             TmpCoord.x = res[0];
@@ -110,13 +163,26 @@ int main(int argc, char* argv[])
             //val[i][1] = res[0];
             i++;
             addVectorList(&OldCoord,&TmpCoord,*ptr,List, i);
+
+            if(good)
+            {
+                Figure[j-1]->point.x = TmpCoord.x;
+                Figure[j-1]->point.y = TmpCoord.y;
+                Figure[j-1]->next = newShape();
+                Figure[j-1] = Figure[j-1]->next;
+            }
+
             copyCoord(&TmpCoord, &OldCoord);
             printVector(List[i]);
         }while(res[1] ==44);            // tant qu'on ne rencontre pas de ;
+        if(good)
+            Figure[j-1] = TmpShape;
     } while(checkEnd(matrice) ==0);     // Tant qu'on ne rencontre pas le caractere "echap"
 
     printf("\nFin du fichier\n");                                   
-                                                         
+ 
+    printFigure(Figure,j);
+
     return 0;
 }
 
