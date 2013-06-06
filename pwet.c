@@ -124,64 +124,78 @@ int main(int argc, char* argv[])
     Shape* TmpShape;
     int i=0;
     int j=0;
-    int good;
+    int first = 1;
+    int good = 2;
     int res[3];                 // RES => res[0] c'est le nombre rencontré
                                 //     => res[1] c'est la valeur du caractere suivant
                                 //     => res[2] c'est la position dans le fichier 
 
     ind = getWord(matrice, "LTPU");     // On cherche LTPU et on récupere sa position dans le fichier
     getNum(matrice, res, ind);          // On cherche ensuite le nombre juste après
-    OldCoord.x = res[0];
+    OldCoord.x = res[0];                // On le stock
     getNum(matrice, res, res[2]);       // Ainsi que celui juste apres car LTPU[X,Y]
-    OldCoord.y = res[0];
+    OldCoord.y = res[0];                // On le stock
 
     printf("LTPU [%d-%d]\n\n",OldCoord.x,OldCoord.y);
-    do                                  // On passe d'action en action
+    do                                          // On passe d'action en action (de PU en PD etc ...)
     {
         i=0;
-        getAWord(matrice, ptr, res);    // On cherche ensuite un mot (normalement PD ou PU)
-        printf("We got : %s\n",*ptr);
-        if(strcmp(*ptr,"PD")==0)
+        getAWord(matrice, ptr, res);            // On cherche ensuite un mot (normalement PD ou PU) sinon il y a un problème
+        printf("\nWe got : %s\n",*ptr);
+        if(strcmp(*ptr,"PU")==0 || first == 1)  // Si c'est un PU (ou si first ==1 et dans ce cas là le mot était LTPU), c'est le début d'une Shape
         {
             printf("j = %d\n",j);
-            j++;
-            resizeFigure(*Figure, j);
-            Figure[j-1] = newShape();
-            good = 1;
-            TmpShape = Figure[j-1];
+            j++;                                // On augmente la taille de la Figure
+            resizeFigure(*Figure, j);           // On rajoute une case à la Figure
+            Figure[j-1] = newShape();           // On met une Shape dans la nouvelle case créée
+            TmpShape = Figure[j-1];             // On stock l'adresse de la première Shape pour la remettre dans l'ordre à la fin
+            if(first)
+            {
+                good = 2;                       // On indique qu'on est prêt à rajouter les autres Shape et qu'à la fin on remette tout en ordre
+                Figure[j-1]->point.x = OldCoord.x;  // On stock le nombre LTPU (x)
+                Figure[j-1]->point.y = OldCoord.y;  // On stock le nombre LTPU (y)
+                Figure[j-1]->next = newShape();     // On prépare la prochaine Shape
+                Figure[j-1] = Figure[j-1]->next;    // On décale le debut de la figure
+            }
+            else
+                good = 1;                       // On indique qu'on est prêt à rajouter les autres Shape
+            first = 0;                          // On indique que ce n'est plus le départ
         }
         else
         {
-            good = 0;
+            good = 2;                           // Si ce n'est pas un PU ni le départ, alors c'est un PD
         }
-        do{                             // On passe de points en points
-            getNum(matrice, res, res[2]);
-            TmpCoord.x = res[0];
-            //val[i][0] = res[0];
-            getNum(matrice, res, res[2]);
-            TmpCoord.y = res[0];
-            //val[i][1] = res[0];
-            i++;
-            addVectorList(&OldCoord,&TmpCoord,*ptr,List, i);
+        do{                                     // On passe de points en points
+            getNum(matrice, res, res[2]);       // On prend le nombre
+            TmpCoord.x = res[0];                // On le stock
+            getNum(matrice, res, res[2]);       // On prend le nombre
+            TmpCoord.y = res[0];                // On le stock
+            i++;                                // On augmente la taille de la liste de Vector
+            addVectorList(&OldCoord,&TmpCoord,*ptr,List, i);    // Et on rajoute le nouveau Vector à la liste
 
-            if(good)
+            if(good!=0)
             {
-                Figure[j-1]->point.x = TmpCoord.x;
-                Figure[j-1]->point.y = TmpCoord.y;
-                Figure[j-1]->next = newShape();
-                Figure[j-1] = Figure[j-1]->next;
+                Figure[j-1]->point.x = TmpCoord.x;  // On stock le nombre (x)
+                Figure[j-1]->point.y = TmpCoord.y;  // On stock le nombre (y)
+                Figure[j-1]->next = newShape();     // On prépare la prochaine Shape
+                Figure[j-1] = Figure[j-1]->next;    // On décale le debut de la figure
             }
 
-            copyCoord(&TmpCoord, &OldCoord);
-            printVector(List[i]);
-        }while(res[1] ==44);            // tant qu'on ne rencontre pas de ;
-        if(good)
-            Figure[j-1] = TmpShape;
+            copyCoord(&TmpCoord, &OldCoord);        // On copie l'ancien point pour pouvoir le stocker dans un Vector (on crée un Vector à chaque nouveau point Vector [ ancien point ; nouveau point ]
+            printVector(List[i]);                   // On affiche le Vector qu'on vient de créer
+        }while(res[1] ==44);            // On continue tant qu'on ne rencontre pas de ;
+
+        if(good==2)
+        {
+            printf("We got the whole shape, on remet dans l'ordre\n");
+            Figure[j-1] = TmpShape;     // On remet la première Shape pour tout remettre dans l'ordre
+        }
+
     } while(checkEnd(matrice) ==0);     // Tant qu'on ne rencontre pas le caractere "echap"
 
     printf("\nFin du fichier\n");                                   
  
-    printFigure(Figure,j);
+    printFigure(Figure,j);              // On affiche la Figure
 
     return 0;
 }
