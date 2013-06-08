@@ -3,22 +3,25 @@
 #include <string.h>
 #include "pwet.h"
 
-int getWord(FILE* matrice, char* word)
+// Will find the word in parameters
+int getWord(FILE* matrice, char* word, FILE* info)
 {
-   int i=0;
-   int end=0; 
-   char c;
-   char buff_word[50];
+    int i=0;
+    int end=0; 
+    char c;
+    char buff_word[50];
 
-   if(matrice == NULL) {
-       printf("Impossible d'ouvrir le fichier de matrice donne en argument\n");
-       printf("Fin du programme\n");
-       return -1;
-   }
-   else {
+    if(matrice == NULL) {
+        printf("Impossible d'ouvrir le fichier de matrice donne en argument\n");
+        printf("Fin du programme\n");
+        return -1;
+    }
+    else {
        do
        {
            c = fgetc(matrice);
+           fprintf( info, "%c", c);
+
            if(c == EOF) {       // Cas de la fin du fichier
                end = 1;
                printf("\nFin du fichier\n");
@@ -34,8 +37,9 @@ int getWord(FILE* matrice, char* word)
                if(i != 0) {             // Si i different de 0, on a bien recuperer un mot, on le compare
    //                printf("we got a word : %s\n", buff_word);
                    if(strcmp(buff_word, word) == 0) {           // On compare le mot en cours avec le mot recherche
+
+                        fseek(info, -(strlen(word)+1), SEEK_CUR);   // On se repositionne dans le nouveau fichier avant le mot qu'on cherchait vu qu'on veut pas forcément le mettre dans le nouveau fichier
     //                   printf("We got the good word, at %d\n", ftell(matrice));
-                       
                        return ftell(matrice)-1;                   // On retourne la position dans le fichier (-1 car on a su que c'était un mot au moment ou on a rencontrer autre chose qu'un caractere)
                     }
                    i=0;
@@ -46,6 +50,7 @@ int getWord(FILE* matrice, char* word)
    return 0;                    // Si on a pas trouve le mot, on renvoie 0
 }
 
+// Prend n'importe quel mot après la position présente dans res[3]
 void getAWord(FILE* matrice, char** ptr, int res[3])     // Variante de getWord qui va renvoyer le premier mot qu'il rencontre
 {
    int i=0;
@@ -86,7 +91,7 @@ void getAWord(FILE* matrice, char** ptr, int res[3])     // Variante de getWord 
    return;                    // Si on a pas trouve le mot, on renvoie 0
 }
 
-
+// Prend le mot juste après la position présente dans res
 void getNum(FILE* matrice, int res[3], int pos)
 {
     int j=0;
@@ -125,21 +130,14 @@ void getNum(FILE* matrice, int res[3], int pos)
             }
         }while(!end);
     }
-    printf("pwet\n");
+    printf("Problem in getNum\n");
 }
 
-
-
-
+// Will copy one Coord into another one
 void copyCoord(Coord* From, Coord* To)
 {
     To->x = From->x;
     To->y = From->y;
-}
-
-void printShapeUnit(Shape *a)
-{
-    printf("Shape [%d,%d]\n",a->point.x,a->point.y);
 }
 
 // Check si c'est la fin des operations
@@ -182,6 +180,7 @@ void resizeFigure(Shape* Figure, int size)
     //return new;
 }
 
+// Va créer un nouveau Vector et le remplir
 Vector* newVectorBis(Coord *From, Coord *To, char* type)
 {
     Vector* new = newVector();
@@ -205,6 +204,7 @@ Vector* newVectorBis(Coord *From, Coord *To, char* type)
     return new;
 }
 
+// Crée yb biyveay Vector et le rajoute le Vecotr dans la liste
 void addVectorList(Coord *From, Coord *To, char* type, Vector** List, int size)
 {
     List[size] = newVectorBis(From, To, type);
@@ -226,28 +226,110 @@ void printCoord(Coord *a)
     printf("Coord [%d,%d]\n", a->x, a->y);
 }
 
+// Will print the Coord that is inside a Shape
+void printShapeUnit(Shape *a)
+{
+    printf("Shape [%d,%d]\n",a->point.x,a->point.y);
+}
+
+// Affiche une Shape
 void printShape(Shape *a)
 {
-    while(a->next != NULL)
+    Shape* Tmp = a;        
+    while(Tmp->next != NULL)      // On parcourt toute la Shape
     {
-        printShapeUnit(a);
-        a = a->next;
+        printShapeUnit(Tmp);      // On affiche un élément
+        Tmp = Tmp->next;            // On passe à l'élement d'après
     }
 }
 
-void printFigure(Shape **a, int size)
+// Affiche une Figure (avec sa taille)
+void printFigure(Shape **Figure, int size)
 {
     int i;
     for(i=0;i<size;i++)
     {
         printf("Figure num %d\n",i);
-        printShape(a[i]);
+        printShape(Figure[i]);
     }
+}
+
+// Pour récupérer la fin du fichier et la mettre dans le nouveau fichier
+void getRestOfFile(FILE* matrice, FILE* info)
+{
+    char c;
+    int end=0;
+
+    if(matrice == NULL) {
+        printf("Impossible d'ouvrir le fichier de matrice donne en argument\n");
+        printf("Fin du programme\n");
+        exit(-1);
+    }
+    else {
+        do
+        {
+            c = fgetc(matrice);
+            if(c == EOF) {       // Cas de la fin du fichier
+                end = 1;
+                printf("\nFin du fichier\n");
+            }
+            fprintf(info, "%c", c);
+        }while(!end);
+    } 
+}
+
+// Ecrit une chaine de caractere dans le fichier
+void printTxtInFile(char* txt, FILE* file)
+{
+    fprintf(file, "%s", txt);
+}
+
+// Ecrit les coordonnées d'une Shape séparés d'une virgule dans le fichier
+void printShapeUnitInFile(Shape* unit, FILE* file)
+{
+    fprintf(file, "%d,%d", unit->point.x,unit->point.y);
+}
+
+// Pour recréer le contenu du fichier (LTPU, PU, PD) dans newFile
+void recreateFile(Shape** Figure, int size, FILE* newFile)
+{
+    printf("\nWe're recreating the file ...\n");
+    int i;
+    Shape* Tmp;
+
+    for(i=0;i<size;i++)                 // On passe de Shapes en Shapes
+    {
+        printf("Figure num %d\n",i);
+        Tmp = Figure[i];
+        if(i==0)
+        {
+            printTxtInFile("LTPU", newFile);
+
+        }
+        else
+            printTxtInFile("PU", newFile);
+
+        printShapeUnitInFile(Tmp, newFile);
+        printTxtInFile(";PD", newFile);
+        
+        Tmp = Tmp->next;
+
+        while(Tmp->next != NULL)  // On passe de points en points à l'intérieur des Shapes
+        {
+            printShapeUnitInFile(Tmp, newFile);
+            Tmp = Tmp->next;
+            if(Tmp->next != NULL)
+                printTxtInFile(",", newFile);
+        }
+        printTxtInFile(";", newFile);
+    }
+
 }
 
 int main(int argc, char* argv[])
 {
     FILE* matrice = fopen(argv[1],"r");
+    FILE* newFile = fopen("newFile.prn","w");
     char **ptr=malloc(sizeof(char**));
     *ptr = (char*) malloc(100*sizeof(char));
  
@@ -268,13 +350,13 @@ int main(int argc, char* argv[])
                                 //     => res[1] c'est la valeur du caractere suivant
                                 //     => res[2] c'est la position dans le fichier 
 
-    ind = getWord(matrice, "LTPU");     // On cherche LTPU et on récupere sa position dans le fichier
+    ind = getWord(matrice, "LTPU", newFile);     // On cherche LTPU et on récupere sa position dans le fichier
     getNum(matrice, res, ind);          // On cherche ensuite le nombre juste après
     OldCoord.x = res[0];                // On le stock
     getNum(matrice, res, res[2]);       // Ainsi que celui juste apres car LTPU[X,Y]
     OldCoord.y = res[0];                // On le stock
 
-    printf("LTPU [%d-%d]\n\n",OldCoord.x,OldCoord.y);
+    printf("LTPU [%d-%d]\n",OldCoord.x,OldCoord.y);
     do                                          // On passe d'action en action (de PU en PD etc ...)
     {
         i=0;
@@ -315,9 +397,6 @@ int main(int argc, char* argv[])
             {
                 Figure[j-1]->point.x = TmpCoord.x;  // On stock le nombre (x)
                 Figure[j-1]->point.y = TmpCoord.y;  // On stock le nombre (y)
-//                printf("\nFigure trouvee : \n");
-//                printShapeUnit(Figure[j-1]);
-//                printf("\n");
                 Figure[j-1]->next = newShape();     // On prépare la prochaine Shape
                 Figure[j-1] = Figure[j-1]->next;    // On décale le debut de la figure
             }
@@ -334,10 +413,22 @@ int main(int argc, char* argv[])
 
     } while(checkEnd(matrice) ==0);     // Tant qu'on ne rencontre pas le caractere "echap"
 
-    printf("\nFin du fichier\n\n");                                   
- 
     printFigure(Figure,j);              // On affiche la Figure
 
+    printf("\nTODO : Maintenant qu'on a recuperer tous les points, on optimise\n");
+
+    printf("\nMaintenant que les points sont dans un ordre optimal, on reforme la structure et on réécrit tout dans le nouveau fichier\n");
+
+    recreateFile(Figure, j, newFile);
+
+    printf("\nEt maintenant on récupère le reste du fichier et on le met dans le nouveau fichier pour reformer un fichier prn correct\n");
+
+    getRestOfFile(matrice, newFile);
+
+    printf("\nNouveau fichier créé, on ferme tout et on quitte. THE END.\n\n");                                   
+ 
+    fclose(newFile);
+    fclose(matrice);
     return 0;
 }
 
