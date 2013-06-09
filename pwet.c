@@ -1,7 +1,16 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 #include <string.h>
 #include "pwet.h"
+
+float totalPD=0.0;
+float totalPU=0.0;
+
+float dist(Coord a, Coord b)
+{
+    return sqrt(pow(a.x-b.x,2)+pow(a.y-b.y,2));
+}
 
 // Will find the word in parameters
 int getWord(FILE* matrice, char* word, FILE* info)
@@ -213,11 +222,18 @@ void addVectorList(Coord *From, Coord *To, char* type, Vector** List, int size)
 // Affichage d'un Vector
 void printVector(Vector *v)
 {
+    float distParcourue = dist(v->a,v->b);
     if(v->type)
+    {
         printf("\nPU");
+        totalPU += distParcourue;
+    }
     else
+    {
         printf("PD");
-    printf(" A[%d,%d] B[%d,%d]\n", v->a.x, v->a.y, v->b.x, v->b.y);
+        totalPD += distParcourue;
+    }
+    printf(" A[%d,%d] B[%d,%d] DIST : %f\n", v->a.x, v->a.y, v->b.x, v->b.y, distParcourue );
 }
 
 // Affichage d'un Coord
@@ -293,13 +309,13 @@ void printShapeUnitInFile(Shape* unit, FILE* file)
 // Pour recréer le contenu du fichier (LTPU, PU, PD) dans newFile
 void recreateFile(Shape** Figure, int size, FILE* newFile)
 {
-    printf("\nWe're recreating the file ...\n");
+    printf("...\n");
     int i;
     Shape* Tmp;
 
     for(i=0;i<size;i++)                 // On passe de Shapes en Shapes
     {
-        printf("Figure num %d\n",i);
+//        printf("Figure num %d\n",i);
         Tmp = Figure[i];
         if(i==0)
         {
@@ -329,12 +345,15 @@ void recreateFile(Shape** Figure, int size, FILE* newFile)
 int main(int argc, char* argv[])
 {
     FILE* matrice = fopen(argv[1],"r");
-    FILE* newFile = fopen("newFile.prn","w");
+    char *fileNew = malloc(sizeof(char)*strlen(argv[1]+4));
+    strcpy(fileNew,"new_"); 
+    strcat(fileNew,argv[1]);                        // Le nouveau fichier sera nommé à l'identique, avec new_ devant
+    FILE* newFile = fopen(fileNew,"w");
     char **ptr=malloc(sizeof(char**));
     *ptr = (char*) malloc(100*sizeof(char));
  
     Vector **List=malloc(sizeof(Vector**));         // Tableau de pointeur de Vector
-    *List = (Vector*) malloc(100*sizeof(Vector*));   // De taille : 20
+    *List = (Vector*) malloc(100*sizeof(Vector*));  // De taille : 20
 
     Shape **Figure = malloc(sizeof(Shape**));       // Tableau dynamique de pointeur de Figures
     
@@ -364,7 +383,7 @@ int main(int argc, char* argv[])
         printf("\nWe got : %s\n",*ptr);
         if(strcmp(*ptr,"PU")==0 || first == 1)  // Si c'est un PU (ou si first ==1 et dans ce cas là le mot était LTPU), c'est le début d'une Shape
         {
-            printf("j = %d\n",j);
+            printf("Shape num %d\n",j);
             j++;                                // On augmente la taille de la Figure
             resizeFigure(*Figure, j);           // On rajoute une case à la Figure
             Figure[j-1] = newShape();           // On met une Shape dans la nouvelle case créée
@@ -407,7 +426,7 @@ int main(int argc, char* argv[])
 
         if(good==2)
         {
-            printf("We got the whole shape, on remet dans l'ordre\n");
+            printf("\nWe got the whole shape, on remet dans l'ordre\n");
             Figure[j-1] = TmpShape;     // On remet la première Shape pour tout remettre dans l'ordre
         }
 
@@ -425,6 +444,7 @@ int main(int argc, char* argv[])
 
     getRestOfFile(matrice, newFile);
 
+    printf("\nDistance totale PD : %f, PU : %f\n",totalPD, totalPU);
     printf("\nNouveau fichier créé, on ferme tout et on quitte. THE END.\n\n");                                   
  
     fclose(newFile);
