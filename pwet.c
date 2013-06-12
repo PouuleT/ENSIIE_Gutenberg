@@ -44,11 +44,9 @@ int getWord(FILE* matrice, char* word, FILE* info)
            }
            else {                       // Si on arrive ici, ce n'est plus un caractere donc le mot est termine
                if(i != 0) {             // Si i different de 0, on a bien recuperer un mot, on le compare
-   //                printf("we got a word : %s\n", buff_word);
                    if(strcmp(buff_word, word) == 0) {           // On compare le mot en cours avec le mot recherche
 
                         fseek(info, -(strlen(word)+1), SEEK_CUR);   // On se repositionne dans le nouveau fichier avant le mot qu'on cherchait vu qu'on veut pas forcément le mettre dans le nouveau fichier
-    //                   printf("We got the good word, at %d\n", ftell(matrice));
                        return ftell(matrice)-1;                   // On retourne la position dans le fichier (-1 car on a su que c'était un mot au moment ou on a rencontrer autre chose qu'un caractere)
                     }
                    i=0;
@@ -60,7 +58,7 @@ int getWord(FILE* matrice, char* word, FILE* info)
 }
 
 // Prend n'importe quel mot après la position présente dans res[3]
-void getAWord(FILE* matrice, char** ptr, int res[3])     // Variante de getWord qui va renvoyer le premier mot qu'il rencontre
+void getAWord(FILE* matrice, char* ptr, int res[3])     // Variante de getWord qui va renvoyer le premier mot qu'il rencontre
 {
    int i=0;
    int end=0; 
@@ -91,7 +89,7 @@ void getAWord(FILE* matrice, char** ptr, int res[3])     // Variante de getWord 
                if(i != 0) {             // Si i different de 0, on a bien recuperer un mot, on le compare
    //                printf("we got a word : %s\n", buff_word);
                        res[2] = ftell(matrice)-1;                   // On retourne la position dans le fichier (-1 car on a su que c'était un mot au moment ou on a rencontrer autre chose qu'un caractere)
-                       strcpy(*ptr, buff_word);                            // On retourne le mot rencontre
+                       strcpy(ptr, buff_word);                            // On retourne le mot rencontre
                        return;
                }
            }
@@ -129,7 +127,6 @@ void getNum(FILE* matrice, int res[3], int pos)
             }
             else {                       // Si on arrive ici, ce n'est plus un caractere donc le mot est termine
                 if(j != 0) {             // Si i different de 0, on a bien recuperer un mot, on le compare
-     //               printf("we got a number : %s\n", buff_num);
                     res[0] = atoi(buff_num);                   // On retourne la position dans le fichier
                     res[1] = c;                                 // ainsi que le dernier caractere rencontre afin de savoir si c'est une virgule ou un point virgulle
                     res[2] = ftell(matrice);                                 // la position dans le fichier
@@ -177,16 +174,16 @@ Shape* newShape()
 }
 
 // Allocation et initialisation d'une nouvelle ShapeStar
-void resizeFigure(Shape* Figure, int size)
+void resizeFigure(Shape*** Figure, int size)
 {
     //Shape** new = realloc(Figure,  size*sizeof(Shape*));
-    Figure = realloc(Figure,  size*sizeof(Shape*));
-    if(Figure==NULL)
+    *Figure = realloc(*Figure,  size*sizeof(Shape*));
+    if(*Figure==NULL)
     {
         printf("Problem when reallocationg the Figure ...");
         exit(-1);
     }
-    //return new;
+    printf("pwet\n");
 }
 
 // Va créer un nouveau Vector et le remplir
@@ -315,7 +312,6 @@ void recreateFile(Shape** Figure, int size, FILE* newFile)
 
     for(i=0;i<size;i++)                 // On passe de Shapes en Shapes
     {
-//        printf("Figure num %d\n",i);
         Tmp = Figure[i];
         if(i==0)
         {
@@ -345,18 +341,17 @@ void recreateFile(Shape** Figure, int size, FILE* newFile)
 int main(int argc, char* argv[])
 {
     FILE* matrice = fopen(argv[1],"r");
-    char *fileNew = malloc(sizeof(char)*strlen(argv[1]+4));
+    char *fileNew = malloc(sizeof(char)*(strlen(argv[1])+4));
     strcpy(fileNew,"new_"); 
     strcat(fileNew,argv[1]);                        // Le nouveau fichier sera nommé à l'identique, avec new_ devant
-    FILE* newFile = fopen(fileNew,"w");
-    char **ptr=malloc(sizeof(char**));
-    *ptr = (char*) malloc(100*sizeof(char));
+    FILE* newFile = fopen(fileNew,"w");             // On ouvre le nouveau fichier créé
+    char *ptr=malloc(sizeof(char)*20);              // ptr va stocker les mots qu'on trouve dans le fichier
  
-    Vector **List=malloc(sizeof(Vector**));         // Tableau de pointeur de Vector
-    *List = (Vector*) malloc(100*sizeof(Vector*));  // De taille : 20
+    Vector **List=malloc(100*sizeof(Vector*));         // Tableau de pointeur de Vector
+//    List = (Vector*) malloc(100*sizeof(Vector*));  // De taille : 20
 
-    Shape **Figure = malloc(sizeof(Shape**));       // Tableau dynamique de pointeur de Figures
-    
+    Shape **Figure = malloc(sizeof(Shape*));       // Tableau dynamique de pointeur de Figures
+
     int ind;
     Coord OldCoord;
     Coord TmpCoord;
@@ -380,12 +375,12 @@ int main(int argc, char* argv[])
     {
         i=0;
         getAWord(matrice, ptr, res);            // On cherche ensuite un mot (normalement PD ou PU) sinon il y a un problème
-        printf("\nWe got : %s\n",*ptr);
-        if(strcmp(*ptr,"PU")==0 || first == 1)  // Si c'est un PU (ou si first ==1 et dans ce cas là le mot était LTPU), c'est le début d'une Shape
+        printf("\nWe got : %s\n",ptr);
+        if(strcmp(ptr,"PU")==0 || first == 1)  // Si c'est un PU (ou si first ==1 et dans ce cas là le mot était LTPU), c'est le début d'une Shape
         {
             printf("Shape num %d\n",j);
             j++;                                // On augmente la taille de la Figure
-            resizeFigure(*Figure, j);           // On rajoute une case à la Figure
+            resizeFigure(&Figure, j+1);           // On rajoute une case à la Figure
             Figure[j-1] = newShape();           // On met une Shape dans la nouvelle case créée
             TmpShape = Figure[j-1];             // On stock l'adresse de la première Shape pour la remettre dans l'ordre à la fin
             if(first)
@@ -410,7 +405,7 @@ int main(int argc, char* argv[])
             getNum(matrice, res, res[2]);       // On prend le nombre
             TmpCoord.y = res[0];                // On le stock
             i++;                                // On augmente la taille de la liste de Vector
-            addVectorList(&OldCoord,&TmpCoord,*ptr,List, i);    // Et on rajoute le nouveau Vector à la liste
+            addVectorList(&OldCoord,&TmpCoord,ptr,List, i);    // Et on rajoute le nouveau Vector à la liste
 
             if(good!=0)
             {
