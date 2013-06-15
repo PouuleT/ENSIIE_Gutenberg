@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <limits.h>
 #include <string.h>
 #include "pwet.h"
 
@@ -16,7 +17,7 @@ float dist(Coord a, Coord b)
 int getWord(FILE* matrice, char* word, FILE* info)
 {
     int i=0;
-    int end=0; 
+    int end=0;
     char c;
     char buff_word[50];
 
@@ -61,7 +62,7 @@ int getWord(FILE* matrice, char* word, FILE* info)
 void getAWord(FILE* matrice, char* ptr, int res[3])     // Variante de getWord qui va renvoyer le premier mot qu'il rencontre
 {
    int i=0;
-   int end=0; 
+   int end=0;
    char c;
    char buff_word[50];
 
@@ -102,7 +103,7 @@ void getAWord(FILE* matrice, char* ptr, int res[3])     // Variante de getWord q
 void getNum(FILE* matrice, int res[3], int pos)
 {
     int j=0;
-    int end=0; 
+    int end=0;
     char c;
     char buff_num[50];
 
@@ -248,12 +249,14 @@ void printShapeUnit(Shape *a)
 // Affiche une Shape
 void printShape(Shape *a)
 {
-    Shape* Tmp = a;        
-    while(Tmp->next != NULL)      // On parcourt toute la Shape
+
+    Shape* Tmp = a;
+    printShapeUnit(Tmp);
+    /*while(Tmp->next != NULL)      // On parcourt toute la Shape
     {
         printShapeUnit(Tmp);      // On affiche un élément
         Tmp = Tmp->next;            // On passe à l'élement d'après
-    }
+    }*/
 }
 
 // Affiche une Figure (avec sa taille)
@@ -265,6 +268,63 @@ void printFigure(Shape **Figure, int size)
         printf("Figure num %d\n",i);
         printShape(Figure[i]);
     }
+}
+
+// Optimisation à partir du 1er point de chaque figure
+void optiPremierPoint(Shape **Figure, int size)
+{
+
+  // Point de départ du laser
+  Coord pointDepart;
+  // On débute l'algo en prenant comme point de départ, le 1er point de la figure 0
+  copyCoord(&Figure[0]->point, &pointDepart);
+  int numFigureDepart = 0;
+
+  int numFigureProche;
+  int distFigureProche = INT_MAX;
+
+  // Variables temporaires pour le tri
+  Shape* tmp;
+  int distTmp;
+
+  int i;
+  int permutation = 1;
+  printFigure(Figure,size);
+  while (permutation == 1)
+  {
+    permutation = 0 ;
+
+    for (i = numFigureDepart + 1; i < size ; i++)
+    {
+      // Pour chaque figure, on calcule la distance avec le point de départ du laser
+      distTmp = dist(pointDepart, Figure[i]->point);
+      if (distTmp < distFigureProche)
+      {
+
+        // On conserve la distance et le numéro de la figure
+        distFigureProche = distTmp;
+        numFigureProche = i;
+        permutation = 1 ;
+      }
+    }
+
+    if (permutation == 1)
+    {
+
+      // La figure la plus proche de la figure de départ est enregistrer en n+1 de la figure de départ
+      tmp = Figure[numFigureDepart + 1];
+      Figure[numFigureDepart + 1] = Figure[numFigureProche];
+      Figure[numFigureProche] = tmp;
+
+      printf("Point de départ [%d,%d] - Point le plus proche [%d,%d] : %d \n", Figure[numFigureDepart]->point.x, Figure[numFigureDepart]->point.y, Figure[numFigureDepart + 1]->point.x, Figure[numFigureDepart + 1]->point.y, distFigureProche);
+
+      // Le nouveau point de départ est le 1er point de la figure que l'on vient de trouver
+      copyCoord(&Figure[numFigureDepart + 1]->point, &pointDepart);
+      numFigureDepart++;
+      distFigureProche = INT_MAX;
+    }
+  }
+  printFigure(Figure,size);
 }
 
 // Pour récupérer la fin du fichier et la mettre dans le nouveau fichier
@@ -288,7 +348,7 @@ void getRestOfFile(FILE* matrice, FILE* info)
             }
             fprintf(info, "%c", c);
         }while(!end);
-    } 
+    }
 }
 
 // Ecrit une chaine de caractere dans le fichier
@@ -323,7 +383,7 @@ void recreateFile(Shape** Figure, int size, FILE* newFile)
 
         printShapeUnitInFile(Tmp, newFile);
         printTxtInFile(";PD", newFile);
-        
+
         Tmp = Tmp->next;
 
         while(Tmp->next != NULL)  // On passe de points en points à l'intérieur des Shapes
@@ -381,11 +441,11 @@ int main(int argc, char* argv[])
 {
     FILE* matrice = fopen(argv[1],"r");
     char *fileNew = malloc(sizeof(char)*(strlen(argv[1])+4));
-    strcpy(fileNew,"new_"); 
+    strcpy(fileNew,"new_");
     strcat(fileNew,argv[1]);                        // Le nouveau fichier sera nommé à l'identique, avec new_ devant
     FILE* newFile = fopen(fileNew,"w");             // On ouvre le nouveau fichier créé
     char *ptr=malloc(sizeof(char)*20);              // ptr va stocker les mots qu'on trouve dans le fichier
- 
+
     Vector **List=malloc(100*sizeof(Vector*));         // Tableau de pointeur de Vector
 //    List = (Vector*) malloc(100*sizeof(Vector*));  // De taille : 20
 
@@ -401,7 +461,7 @@ int main(int argc, char* argv[])
     int good = 2;
     int res[3];                 // RES => res[0] c'est le nombre rencontré
                                 //     => res[1] c'est la valeur du caractere suivant
-                                //     => res[2] c'est la position dans le fichier 
+                                //     => res[2] c'est la position dans le fichier
 
     ind = getWord(matrice, "LTPU", newFile);     // On cherche LTPU et on récupere sa position dans le fichier
     getNum(matrice, res, ind);          // On cherche ensuite le nombre juste après
@@ -470,6 +530,7 @@ int main(int argc, char* argv[])
 
     printf("\nTODO : Maintenant qu'on a recuperer tous les points, on optimise\n");
 
+    optiPremierPoint(Figure,j);
     printf("\nMaintenant que les points sont dans un ordre optimal, on reforme la structure et on réécrit tout dans le nouveau fichier\n");
 
     recreateFile(Figure, j, newFile);
@@ -479,8 +540,8 @@ int main(int argc, char* argv[])
     getRestOfFile(matrice, newFile);
 
     printf("\nDistance totale PD : %f, PU : %f\n",totalPD, totalPU);
-    printf("\nNouveau fichier créé, on ferme tout et on quitte. THE END.\n\n");                                   
- 
+    printf("\nNouveau fichier créé, on ferme tout et on quitte. THE END.\n\n");
+
     fclose(newFile);
     fclose(matrice);
     return 0;
