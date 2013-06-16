@@ -13,19 +13,14 @@
 
 int main(int argc, char* argv[])
 {
-    // float totalPU=0.0;
-    // float totalPD=0.0;
     FILE* matrice = fopen(argv[1],"r");
-    char *fileNew = malloc(sizeof(char)*(strlen(argv[1])+4));
-    strcpy(fileNew,"new_");
-    strcat(fileNew,argv[1]);                        // Le nouveau fichier sera nommé à l'identique, avec new_ devant
-    FILE* newFile = fopen(fileNew,"w");             // On ouvre le nouveau fichier créé
-    char *ptr=malloc(sizeof(char)*20);              // ptr va stocker les mots qu'on trouve dans le fichier
-
+    FILE* newFile;
+    int onlyPrint;          // Tells if we just want to print info, or to optimize the file
+    char *fileNew;
     Vector **List=malloc(100*sizeof(Vector*));         // Tableau de pointeur de Vector
-//    List = (Vector*) malloc(100*sizeof(Vector*));  // De taille : 20
-
+    char *ptr=malloc(sizeof(char)*20);              // ptr va stocker les mots qu'on trouve dans le fichier
     Shape **Figure = malloc(sizeof(Shape*));       // Tableau dynamique de pointeur de Figures
+    Shape **newFigure;
 
     int ind;
     Coord OldCoord;
@@ -33,13 +28,30 @@ int main(int argc, char* argv[])
     Shape* TmpShape;
     int i=0;
     int j=0;
+    int k;
     int first = 1;
     int good = 2;
     int res[3];                 // RES => res[0] c'est le nombre rencontré
                                 //     => res[1] c'est la valeur du caractere suivant
                                 //     => res[2] c'est la position dans le fichier
 
-    ind = getWord(matrice, "LTPU", newFile);     // On cherche LTPU et on récupere sa position dans le fichier
+
+    if((argc==3) && (strcmp(argv[2],"print")==0))
+    {
+        onlyPrint = 1;
+    }
+    else
+    {
+        onlyPrint = 0;
+        fileNew = malloc(sizeof(char)*(strlen(argv[1])+4));
+        strcpy(fileNew,"new_");
+        strcat(fileNew,argv[1]);                        // Le nouveau fichier sera nommé à l'identique, avec new_ devant
+
+        newFile = fopen(fileNew,"w");             // On ouvre le nouveau fichier créé
+    }
+
+    ind = getWord(matrice, "LTPU", newFile, onlyPrint);     // On cherche LTPU et on récupere sa position dans le fichier
+
     getNum(matrice, res, ind);          // On cherche ensuite le nombre juste après
     OldCoord.x = res[0];                // On le stock
     getNum(matrice, res, res[2]);       // Ainsi que celui juste apres car LTPU[X,Y]
@@ -90,7 +102,7 @@ int main(int argc, char* argv[])
                 Figure[j-1] = Figure[j-1]->next;    // On décale le debut de la figure
             }
 
-            copyCoord(&TmpCoord, &OldCoord);        // On copie l'ancien point pour pouvoir le stocker dans un Vector (on crée un Vector à chaque nouveau point Vector [ ancien point ; nouveau point ]
+            copyCoord(&TmpCoord, &OldCoord);        // On fais une copie l'ancien point pour pouvoir le stocker dans un Vector (on crée un Vector à chaque nouveau point Vector [ ancien point ; nouveau point ]
             printVector(List[i]);                   // On affiche le Vector qu'on vient de créer
         }while(res[1] ==44);            // On continue tant qu'on ne rencontre pas de ;
 
@@ -111,14 +123,49 @@ int main(int argc, char* argv[])
 
     recreateFile(Figure, j, newFile);
 
-    printf("\nEt maintenant on récupère le reste du fichier et on le met dans le nouveau fichier pour reformer un fichier prn correct\n");
+    if(onlyPrint == 1)
+    {
+        newFigure = Figure;
+    }
+    else
+    {
+        printf("\nMaintenant qu'on a recuperer tous les points, on optimise\n");
 
-    getRestOfFile(matrice, newFile);
+        newFigure = optimiseFigure(Figure, j);
 
-    // printf("\nDistance totale PD : %f, PU : %f\n",totalPD, totalPU);
+        printf("\nMaintenant qu'on a optimisé, on affiche le nouveau resultat!\n");
+
+        printFigure(newFigure,j);              // On affiche la Figure
+
+        printf("\nMaintenant que les points sont dans un ordre optimal, on reforme la structure et on réécrit tout dans le nouveau fichier\n");
+
+        recreateFile(newFigure, j, newFile);
+
+        printf("\nEt maintenant on récupère le reste du fichier et on le met dans le nouveau fichier pour reformer un fichier prn correct\n");
+
+        getRestOfFile(matrice, newFile);
+        fclose(newFile);
+    }
+
+    //printf("\nDistance totale PD : %f, PU : %f\n",totalPD, totalPU);
+    printf("\nNouveau fichier créé, on ferme tout et on quitte. THE END.\n\n");
+
+    for(k=0;k<i;k++)
+    {
+        free(List[k]);
+    }
+    free(List);
+    for(k=0;k<j;k++)
+    {
+        free(newFigure[k]);
+    }
+    free(newFigure);
+
+    //printf("\nDistance totale PD : %f, PU : %f\n",totalPD, totalPU);
     printf("\nNouveau fichier créé, on ferme tout et on quitte. THE END.\n\n");
 
     fclose(newFile);
     fclose(matrice);
+
     return 0;
 }

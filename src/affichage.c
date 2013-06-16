@@ -3,6 +3,7 @@
 #include <string.h>
 #include "../inc/struct.h"
 #include "../inc/affichage.h"
+#include "../inc/outils.h"
 
 // Affichage d'un Vector
 void printVector(Vector *v)
@@ -55,6 +56,12 @@ void printFigure(Shape **Figure, int size)
         printf("Figure num %d\n",i);
         printShape(Figure[i]);
     }
+}
+
+// Ecrit une chaine de caractere dans le fichier
+void printTxtInFile(char* txt, FILE* file)
+{
+    fprintf(file, "%s", txt);
 }
 
 // Ecrit les coordonnées d'une Shape séparés d'une virgule dans le fichier

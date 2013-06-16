@@ -8,7 +8,7 @@
 #include "../inc/outils.h"
 
 // Will find the word in parameters
-int getWord(FILE* matrice, char* word, FILE* info)
+int getWord(FILE* matrice, char* word, FILE* info, int onlyPrint)
 {
     int i=0;
     int end=0;
@@ -24,7 +24,10 @@ int getWord(FILE* matrice, char* word, FILE* info)
        do
        {
            c = fgetc(matrice);
-           fprintf( info, "%c", c);
+           if(!onlyPrint)
+           {
+                fprintf( info, "%c", c);
+           }
 
            if(c == EOF) {       // Cas de la fin du fichier
                end = 1;
@@ -40,8 +43,8 @@ int getWord(FILE* matrice, char* word, FILE* info)
            else {                       // Si on arrive ici, ce n'est plus un caractere donc le mot est termine
                if(i != 0) {             // Si i different de 0, on a bien recuperer un mot, on le compare
                    if(strcmp(buff_word, word) == 0) {           // On compare le mot en cours avec le mot recherche
-
-                        fseek(info, -(strlen(word)+1), SEEK_CUR);   // On se repositionne dans le nouveau fichier avant le mot qu'on cherchait vu qu'on veut pas forcément le mettre dans le nouveau fichier
+                        if(!onlyPrint)
+                            fseek(info, -(strlen(word)+1), SEEK_CUR);   // On se repositionne dans le nouveau fichier avant le mot qu'on cherchait vu qu'on veut pas forcément le mettre dans le nouveau fichier
                        return ftell(matrice)-1;                   // On retourne la position dans le fichier (-1 car on a su que c'était un mot au moment ou on a rencontrer autre chose qu'un caractere)
                     }
                    i=0;
@@ -228,12 +231,6 @@ void getRestOfFile(FILE* matrice, FILE* info)
     }
 }
 
-// Ecrit une chaine de caractere dans le fichier
-void printTxtInFile(char* txt, FILE* file)
-{
-    fprintf(file, "%s", txt);
-}
-
 // Pour recréer le contenu du fichier (LTPU, PU, PD) dans newFile
 void recreateFile(Shape** Figure, int size, FILE* newFile)
 {
@@ -269,115 +266,66 @@ void recreateFile(Shape** Figure, int size, FILE* newFile)
 
 }
 
+// Fonction qui doit mettre Point en tant que point de depart de la Shape* Forme
+void changeBeginingShape(Coord Point, Shape **Forme)
+{
+    Shape* Tmp = *Forme;
+    Shape* endChain = NULL;
+    Shape* newStart = NULL;
+    Shape* newEnd;
+    Shape* before;
+    int end=0;
 
+    printf("\nEnter changeBeginingShape, Shape : \n");
+    printShape(*Forme);
+    printf("To begin with the point : \n");
+    printCoord(&Point);
+    // Si Point est le premier element de la Forme, c'est que la forme est dans le bon ordre et tout est ok
+    if(isCoordEqual(Point, Tmp->point))
+    {
+        printf("Tout est déjà dans l'ordre, rien besoin de changer\n");
+        return;
+    }
+    else
+    {
+        before = Tmp;
+        Tmp = Tmp->next;
+        // A la recherche de l'élément recherché
+        while((Tmp->next != NULL)&&(end == 0))
+        {
+            if(isCoordEqual(Point, Tmp->point)) // Si on a trouvé l'élément cherché
+            {
+                newEnd = before;
+                newStart = Tmp;
+                end =1;
+            }
+            before = Tmp;
+            Tmp = Tmp->next;
+        }
+        end = 0;
+        // A la recherche du premier élément qui est en double à la fin
+        while((Tmp->next != NULL) && (end == 0))
+        {
+            if(isCoordEqual((*Forme)->point, Tmp->point)) // Si on a trouvé l'élément de la fin
+            {
+                endChain = before;
+                end = 1;
+            }
+            else
+            {
+                before = Tmp;
+                Tmp = Tmp->next;
+            }
+        }
+        // On a tous les éléments, on reforme la chaine
+        newEnd->next = Tmp;
+        endChain->next = *Forme;
+    }
+    copyCoord(&Point,&(Tmp->point));
+    Tmp = Tmp->next;
+    copyCoord(&Point,&(Tmp->point));
+    printf("\nEnd of changeBeginingShape with the new one : \n");
+    printShape(newStart);
 
-
-
-
-
-
-//int new_matrix_analyser(FILE* matrice) {
-//    char buff_word[100];
-//    char buff_num[20];
-//    int i=0,j=0;
-//    int end=0;
-//    char c;
-//
-//    if(matrice == NULL) {
-//        printf("Impossible d'ouvrir le fichier de matrice donne en argument\n");
-//        printf("Fin du programme\n");
-//        return -1;
-//    }
-//    else {
-//        printf("Analyse du fichier de matrice ...\n ");
-//        do
-//        {
-//            c = fgetc(matrice);
-//            if(c == EOF) {
-//                end = 1;
-//                printf("\nFin du fichier\n");
-//            }
-//            else if(c >= 48 && c <=57) {
-//                buff_num[j] = c;
-//                buff_num[j+1] = '\0';
-//                j++;
-//                if(i != 0) {
-//                    printf("1 we got a string : %s\n", buff_word);
-//                    i=0;
-//                }
-//            }
-//            else if ((c >= 58 && c <= 126) || (c >=32 && c<=47 )) {
-//                buff_word[i] = c;
-//                buff_word[i+1] = '\0';
-//                i++;
-//                if(j != 0) {
-//                    printf("2 we got a number : %d\n", atoi(buff_num));
-//                    j=0;
-//                }
-//            }
-//            else if(c == 27) {
-//                printf("_");
-//                if(j != 0) {
-//                    printf("3 we got a number : %d\n", atoi(buff_num));
-//                    j=0;
-//                }
-//                else if(i != 0) {
-//                    printf("4 we got a string : %s\n", buff_word);
-//                    i=0;
-//                }
-//            }
-//            else {
-//                if(j != 0) {
-//                    printf("5 we got a number : %d\n", atoi(buff_num));
-//                    j=0;
-//                }
-//                else if(i != 0) {
-//                    printf("6 we got a string : %s\n", buff_word);
-//                    i=0;
-//                }
-//
-//                printf("unknown : %c - %d\n",c, c);
-//            }
-////            getchar();
-//        } while (!end);
-//    }
-//    return 1;
-//}
-
-//int analyze_matrix(FILE* matrice) {
-//    int end=0;
-//    int k=0;
-//    char c;
-//
-//    if(matrice == NULL) {
-//        printf("Impossible d'ouvrir le fichier de matrice donne en argument\n");
-//        printf("Fin du programme\n");
-//        return -1;
-//    }
-//    else {
-//        printf("Analyse du fichier de matrice ...\n ");
-//        do
-//        {
-//            c = fgetc(matrice);
-//            if(c == EOF) {
-//                end = 1;
-//                printf("\nFin du fichier\n");
-//            }
-//            else {
-//                if(c == 27)
-//                    printf("_");
-//                else if(c == 1)
-//                    printf("[]");
-//                else
-//                {
-//                    printf("%c", c);
-//                }
-//                k++;
-//            }
-//        } while (!end);
-//        printf("\nLe fichier comporte %d lignes\n", k);
-//    }
-//    printf("Done\n");
-//    return 1;
-//}
-
+    *Forme = newStart;
+}

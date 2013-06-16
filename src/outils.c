@@ -46,6 +46,15 @@ Coord projetePointSegment (Coord p, Coord a, Coord b)
     return res;
 }
 
+// Fonction retourne 1 si a == b, 0 sinon
+int isCoordEqual(Coord a, Coord b)
+{
+    if((a.x == b.x) && (a.y == b.y))
+        return 1;
+    else
+        return 0;
+}
+
 // Will copy one Coord into another one
 void copyCoord(Coord* From, Coord* To)
 {
