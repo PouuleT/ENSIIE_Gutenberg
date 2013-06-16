@@ -40,11 +40,11 @@ void printShape(Shape *a)
 
     Shape* Tmp = a;
     printShapeUnit(Tmp);
-    /*while(Tmp->next != NULL)      // On parcourt toute la Shape
+    while(Tmp->next != NULL)      // On parcourt toute la Shape
     {
         printShapeUnit(Tmp);      // On affiche un élément
         Tmp = Tmp->next;            // On passe à l'élement d'après
-    }*/
+    }
 }
 
 // Affiche une Figure (avec sa taille)

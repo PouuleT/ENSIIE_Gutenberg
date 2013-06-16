@@ -20,6 +20,6 @@ prog : $(OBJS)
 %.o : %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 clean :
-	@rm *.o
+	@rm src/*.o
 cleaner : clean
 	@rm $(AOUT)
