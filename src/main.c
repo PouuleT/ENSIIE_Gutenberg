@@ -114,13 +114,6 @@ int main(int argc, char* argv[])
 
     printFigure(Figure,j);              // On affiche la Figure
 
-    printf("\nTODO : Maintenant qu'on a recuperer tous les points, on optimise\n");
-
-    optiPremierPoint(Figure,j);
-    printf("\nMaintenant que les points sont dans un ordre optimal, on reforme la structure et on réécrit tout dans le nouveau fichier\n");
-
-    recreateFile(Figure, j, newFile);
-
     if(onlyPrint == 1)
     {
         newFigure = Figure;
