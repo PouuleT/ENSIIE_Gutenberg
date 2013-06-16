@@ -14,7 +14,7 @@ float dist(Coord a, Coord b)
 }
 
 // Will find the word in parameters
-int getWord(FILE* matrice, char* word, FILE* info)
+int getWord(FILE* matrice, char* word, FILE* info, int onlyPrint)
 {
     int i=0;
     int end=0;
@@ -30,7 +30,10 @@ int getWord(FILE* matrice, char* word, FILE* info)
        do
        {
            c = fgetc(matrice);
-           fprintf( info, "%c", c);
+           if(!onlyPrint)
+           {
+                fprintf( info, "%c", c);
+           }
 
            if(c == EOF) {       // Cas de la fin du fichier
                end = 1;
@@ -46,8 +49,8 @@ int getWord(FILE* matrice, char* word, FILE* info)
            else {                       // Si on arrive ici, ce n'est plus un caractere donc le mot est termine
                if(i != 0) {             // Si i different de 0, on a bien recuperer un mot, on le compare
                    if(strcmp(buff_word, word) == 0) {           // On compare le mot en cours avec le mot recherche
-
-                        fseek(info, -(strlen(word)+1), SEEK_CUR);   // On se repositionne dans le nouveau fichier avant le mot qu'on cherchait vu qu'on veut pas forcément le mettre dans le nouveau fichier
+                        if(!onlyPrint)
+                            fseek(info, -(strlen(word)+1), SEEK_CUR);   // On se repositionne dans le nouveau fichier avant le mot qu'on cherchait vu qu'on veut pas forcément le mettre dans le nouveau fichier
                        return ftell(matrice)-1;                   // On retourne la position dans le fichier (-1 car on a su que c'était un mot au moment ou on a rencontrer autre chose qu'un caractere)
                     }
                    i=0;
@@ -437,19 +440,238 @@ Coord projetePointSegment (Coord p, Coord a, Coord b)
     return res;
 }
 
+// Fonction retourne 1 si a == b, 0 sinon
+int isCoordEqual(Coord a, Coord b)
+{
+    if((a.x == b.x) && (a.y == b.y))
+        return 1;
+    else
+        return 0;
+}
+
+// Fonction qui doit mettre Point en tant que point de depart de la Shape* Forme
+void changeBeginingShape(Coord Point, Shape **Forme)
+{
+    Shape* Tmp = *Forme;
+    Shape* endChain = NULL;
+    Shape* newStart = NULL;
+    Shape* newEnd;
+    Shape* before;
+    int end=0;
+
+    printf("\nEnter changeBeginingShape, Shape : \n");
+    printShape(*Forme);
+    printf("To begin with the point : \n");
+    printCoord(&Point);
+    // Si Point est le premier element de la Forme, c'est que la forme est dans le bon ordre et tout est ok
+    if(isCoordEqual(Point, Tmp->point))
+    {
+        printf("Tout est déjà dans l'ordre, rien besoin de changer\n");
+        return;
+    }
+    else
+    {
+        before = Tmp;
+        Tmp = Tmp->next;
+        // A la recherche de l'élément recherché
+        while((Tmp->next != NULL)&&(end == 0))
+        {
+            if(isCoordEqual(Point, Tmp->point)) // Si on a trouvé l'élément cherché
+            {    
+                newEnd = before;
+                newStart = Tmp;
+                end =1;
+            }
+            before = Tmp;
+            Tmp = Tmp->next;
+        }
+        end = 0;
+        // A la recherche du premier élément qui est en double à la fin
+        while((Tmp->next != NULL) && (end == 0))
+        {
+            if(isCoordEqual((*Forme)->point, Tmp->point)) // Si on a trouvé l'élément de la fin
+            {
+                endChain = before;
+                end = 1;
+            }
+            else
+            {
+                before = Tmp;
+                Tmp = Tmp->next;
+            }
+        }
+        // On a tous les éléments, on reforme la chaine
+        newEnd->next = Tmp;
+        endChain->next = *Forme;
+    }
+    copyCoord(&Point,&(Tmp->point));
+    Tmp = Tmp->next;
+    copyCoord(&Point,&(Tmp->point));
+    printf("\nEnd of changeBeginingShape with the new one : \n");
+    printShape(newStart);
+
+    *Forme = newStart;
+}
+
+
+int findNearestPointInShape(Coord* Point, Coord* nearestPoint, Shape* Forme, int bestDistance)
+{
+    Shape* Tmp = Forme;             // On copie locallement l'adresse de la Shape pour pouvoir naviguer dedans sans rien changer
+//    Coord nearestPoint;
+    int min = bestDistance, distance;
+
+    printf("Shape : Begin\n");
+    printf("Shape : We're looking for the nearest point of : \n");
+    printCoord(Point);
+
+    while(Tmp->next != NULL)        // On parcourt toute la Shape
+    {
+        distance = dist(Tmp->point,*Point); // On calcule la distance entre le point courant et le point cherché
+        printf("Nouvelle distance : %d\n",distance);
+        if(( distance < min ) || (min == -1))                 // Si c'est moins ou si c'est la première fois, on update,
+        {
+            printf("Shape : C'est moins %d < %d , on update\n",distance,min);
+            min = distance;
+            copyCoord(&(Tmp->point),nearestPoint);    // On met en stock le point le plus proche
+            printf("Shape : Nouveau point le plus proche : \n");
+            printCoord(nearestPoint);
+        }
+        else                                // Sinon on continue
+        {
+        }
+        printf("Shape : on passe a l'element d'apres\n");
+        Tmp = Tmp->next;            // On passe à l'élement d'après
+    }
+    if(min == -1)
+    {
+        printf("Shape : Big problem findNearestPointInShape");
+        exit(-1);
+    }
+    printf("Shape : End\n");
+    return min;
+}
+
+void findNearestPointInFigure(Coord* Point, Shape** Figure, int size, Shape** newFigure, int newFigureID)
+{
+    int i, id;
+    int min = -1, distance;
+    Coord nearestPoint;
+
+    printf("Figure : Begin\n");
+    printf("Figure : We're looking for the nearest point of : \n");
+    printCoord(Point);
+    
+    for(i=0;i<size;i++)
+    {
+        printf("Figure : step %d with Figure of size %d\n",i,size);
+        // La fonction va récupérer le point le plus proche de Point dans la Shape Figure[i], retourner la distance minimale trouvée et mettre à jour nearestPoint avec le point en question
+        distance = findNearestPointInShape(Point, &nearestPoint, Figure[i], min);
+        if((distance < min) || (min == -1))                                             // Si la nouvelle distance est plus petite ou si c'est la première fois
+        {
+            printf("Figure : C'est moins %d < %d, on update\n",distance, min);
+            min = distance;                                                             // On update le min
+            printf("Figure : Nouveau point le plus proche de la shape num %d : \n",i);
+            printCoord(&nearestPoint);
+            id = i;
+        }
+        printf("Figure : on passe a l'element d'apres\n");
+    }
+
+    printf("Figure : Tous les elements ont été traités, on crée la nouvelle Figure\n");
+    printf("D'abord on la met dans le bon ordre\n");
+    changeBeginingShape(nearestPoint, &(Figure[id]));
+
+    printf("On la transfert de Figure à newFigure\n");
+    newFigure[newFigureID]=Figure[id];
+    // Si la Shape trouvée est la dernière de la liste, on ne fait rien, le dernier élément est supprimé
+    if(id == size)
+    {
+    }
+    // Sinon, on met le dernier élément de la Figure à la place de la Shape trouvée
+    else
+    {
+        Figure[id] = Figure[size-1];
+    }
+
+
+    if(min == -1)
+    {
+        printf("Figure : Big problem findNearestPointInShape");
+        exit(-1);
+    }
+    printf("On met à jour le Point\n");
+    copyCoord(&nearestPoint,Point);
+    printf("Figure : End\n");
+}
+
+Shape** optimiseFigure(Shape **Figure, int size)
+{
+    Shape **newFigure = malloc(size*sizeof(Shape *));
+
+    int i, originalSize = size;
+    Coord* Point = malloc(sizeof(Coord));
+    Point->x = 0;
+    Point->y = 0;
+
+    printf("\nWe enter in optimiseFigure\n");
+    for(i=0;i<originalSize;i++)
+    {
+        printf("optimiseFigure step %d with Figure of size %d\n",i,size);
+        // Cette fonction va chercher le point le plus proche de Point dans l'ensemble des points de Figure
+        // Elle va ensuite rajouter ce point et sa Shape associé dans newFigure
+        // Et supprimser le point et sa Shape associée de Figure (pour le pas traiter cette Shape à la prochaine étape
+        // Et copier le point le plus proche dans Point
+        findNearestPointInFigure(Point, Figure, size, newFigure, i);
+        printf("\nBack in optimiseFigure\n");
+        //
+        size--;                             // Une figure vient d'être traitée, alors on diminue la taille et on recommence
+    }
+
+    free(Point);
+    
+    printf("\nEnd of optimiseFigure\n");
+
+    return newFigure;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* 
+ *
+ *                      MAIN FUNCTION
+ *
+ */
+
 int main(int argc, char* argv[])
 {
     FILE* matrice = fopen(argv[1],"r");
+<<<<<<< HEAD
     char *fileNew = malloc(sizeof(char)*(strlen(argv[1])+4));
     strcpy(fileNew,"new_");
     strcat(fileNew,argv[1]);                        // Le nouveau fichier sera nommé à l'identique, avec new_ devant
-    FILE* newFile = fopen(fileNew,"w");             // On ouvre le nouveau fichier créé
-    char *ptr=malloc(sizeof(char)*20);              // ptr va stocker les mots qu'on trouve dans le fichier
-
+             // ptr va stocker les mots qu'on trouve dans le fichier
+    
+	FILE* newFile;
+    int onlyPrint;          // Tells if we just want to print info, or to optimize the file
+    char *fileNew;
     Vector **List=malloc(100*sizeof(Vector*));         // Tableau de pointeur de Vector
-//    List = (Vector*) malloc(100*sizeof(Vector*));  // De taille : 20
 
     Shape **Figure = malloc(sizeof(Shape*));       // Tableau dynamique de pointeur de Figures
+    Shape **newFigure;
 
     int ind;
     Coord OldCoord;
@@ -457,13 +679,29 @@ int main(int argc, char* argv[])
     Shape* TmpShape;
     int i=0;
     int j=0;
+    int k;
     int first = 1;
     int good = 2;
     int res[3];                 // RES => res[0] c'est le nombre rencontré
                                 //     => res[1] c'est la valeur du caractere suivant
                                 //     => res[2] c'est la position dans le fichier
 
-    ind = getWord(matrice, "LTPU", newFile);     // On cherche LTPU et on récupere sa position dans le fichier
+    if((argc==3) && (strcmp(argv[2],"print")==0))
+    {
+        onlyPrint = 1;
+    }
+    else
+    {
+        onlyPrint = 0;
+        fileNew = malloc(sizeof(char)*(strlen(argv[1])+4));
+        strcpy(fileNew,"new_"); 
+        strcat(fileNew,argv[1]);                        // Le nouveau fichier sera nommé à l'identique, avec new_ devant
+
+        newFile = fopen(fileNew,"w");             // On ouvre le nouveau fichier créé
+    }
+
+
+    ind = getWord(matrice, "LTPU", newFile, onlyPrint);     // On cherche LTPU et on récupere sa position dans le fichier
     getNum(matrice, res, ind);          // On cherche ensuite le nombre juste après
     OldCoord.x = res[0];                // On le stock
     getNum(matrice, res, res[2]);       // Ainsi que celui juste apres car LTPU[X,Y]
@@ -514,7 +752,7 @@ int main(int argc, char* argv[])
                 Figure[j-1] = Figure[j-1]->next;    // On décale le debut de la figure
             }
 
-            copyCoord(&TmpCoord, &OldCoord);        // On copie l'ancien point pour pouvoir le stocker dans un Vector (on crée un Vector à chaque nouveau point Vector [ ancien point ; nouveau point ]
+            copyCoord(&TmpCoord, &OldCoord);        // On fais une copie l'ancien point pour pouvoir le stocker dans un Vector (on crée un Vector à chaque nouveau point Vector [ ancien point ; nouveau point ]
             printVector(List[i]);                   // On affiche le Vector qu'on vient de créer
         }while(res[1] ==44);            // On continue tant qu'on ne rencontre pas de ;
 
@@ -528,22 +766,63 @@ int main(int argc, char* argv[])
 
     printFigure(Figure,j);              // On affiche la Figure
 
+<<<<<<< HEAD
     printf("\nTODO : Maintenant qu'on a recuperer tous les points, on optimise\n");
 
     optiPremierPoint(Figure,j);
     printf("\nMaintenant que les points sont dans un ordre optimal, on reforme la structure et on réécrit tout dans le nouveau fichier\n");
 
     recreateFile(Figure, j, newFile);
+=======
+>>>>>>> opti
 
-    printf("\nEt maintenant on récupère le reste du fichier et on le met dans le nouveau fichier pour reformer un fichier prn correct\n");
+    if(onlyPrint == 1)
+    {
+        newFigure = Figure;
+    }
+    else
+    {
+        printf("\nMaintenant qu'on a recuperer tous les points, on optimise\n");
+    
+        newFigure = optimiseFigure(Figure, j);
+        
+        printf("\nMaintenant qu'on a optimisé, on affiche le nouveau resultat!\n");
+    
+        printFigure(newFigure,j);              // On affiche la Figure
+    
+        printf("\nMaintenant que les points sont dans un ordre optimal, on reforme la structure et on réécrit tout dans le nouveau fichier\n");
+    
+        recreateFile(newFigure, j, newFile);
+    
+        printf("\nEt maintenant on récupère le reste du fichier et on le met dans le nouveau fichier pour reformer un fichier prn correct\n");
+    
+        getRestOfFile(matrice, newFile);
+        fclose(newFile);
+    } 
+    
+    printf("\nDistance totale PD : %f, PU : %f\n",totalPD, totalPU);
+    printf("\nNouveau fichier créé, on ferme tout et on quitte. THE END.\n\n"); 
 
-    getRestOfFile(matrice, newFile);
+    for(k=0;k<i;k++)
+    {
+        free(List[k]);
+    }
+    free(List);
+    for(k=0;k<j;k++)
+    {
+        free(newFigure[k]);
+    }
+    free(newFigure);
 
+<<<<<<< HEAD
     printf("\nDistance totale PD : %f, PU : %f\n",totalPD, totalPU);
     printf("\nNouveau fichier créé, on ferme tout et on quitte. THE END.\n\n");
 
     fclose(newFile);
+=======
+>>>>>>> opti
     fclose(matrice);
+
     return 0;
 }
 
@@ -556,110 +835,4 @@ void printTab(int tab[][2], int size)
         printf("[%d;%d]\n",tab[i][0],tab[i][1]);
     }
 }
-
-
-//int new_matrix_analyser(FILE* matrice) {
-//    char buff_word[100];
-//    char buff_num[20];
-//    int i=0,j=0;
-//    int end=0;
-//    char c;
-//
-//    if(matrice == NULL) {
-//        printf("Impossible d'ouvrir le fichier de matrice donne en argument\n");
-//        printf("Fin du programme\n");
-//        return -1;
-//    }
-//    else {
-//        printf("Analyse du fichier de matrice ...\n ");
-//        do
-//        {
-//            c = fgetc(matrice);
-//            if(c == EOF) {
-//                end = 1;
-//                printf("\nFin du fichier\n");
-//            }
-//            else if(c >= 48 && c <=57) {
-//                buff_num[j] = c;
-//                buff_num[j+1] = '\0';
-//                j++;
-//                if(i != 0) {
-//                    printf("1 we got a string : %s\n", buff_word);
-//                    i=0;
-//                }
-//            }
-//            else if ((c >= 58 && c <= 126) || (c >=32 && c<=47 )) {
-//                buff_word[i] = c;
-//                buff_word[i+1] = '\0';
-//                i++;
-//                if(j != 0) {
-//                    printf("2 we got a number : %d\n", atoi(buff_num));
-//                    j=0;
-//                }
-//            }
-//            else if(c == 27) {
-//                printf("_");
-//                if(j != 0) {
-//                    printf("3 we got a number : %d\n", atoi(buff_num));
-//                    j=0;
-//                }
-//                else if(i != 0) {
-//                    printf("4 we got a string : %s\n", buff_word);
-//                    i=0;
-//                }
-//            }
-//            else {
-//                if(j != 0) {
-//                    printf("5 we got a number : %d\n", atoi(buff_num));
-//                    j=0;
-//                }
-//                else if(i != 0) {
-//                    printf("6 we got a string : %s\n", buff_word);
-//                    i=0;
-//                }
-//
-//                printf("unknown : %c - %d\n",c, c);
-//            }
-////            getchar();
-//        } while (!end);
-//    }
-//    return 1;
-//}
-
-//int analyze_matrix(FILE* matrice) {
-//    int end=0;
-//    int k=0;
-//    char c;
-//
-//    if(matrice == NULL) {
-//        printf("Impossible d'ouvrir le fichier de matrice donne en argument\n");
-//        printf("Fin du programme\n");
-//        return -1;
-//    }
-//    else {
-//        printf("Analyse du fichier de matrice ...\n ");
-//        do
-//        {
-//            c = fgetc(matrice);
-//            if(c == EOF) {
-//                end = 1;
-//                printf("\nFin du fichier\n");
-//            }
-//            else {
-//                if(c == 27)
-//                    printf("_");
-//                else if(c == 1)
-//                    printf("[]");
-//                else
-//                {
-//                    printf("%c", c);
-//                }
-//                k++;
-//            }
-//        } while (!end);
-//        printf("\nLe fichier comporte %d lignes\n", k);
-//    }
-//    printf("Done\n");
-//    return 1;
-//}
 
