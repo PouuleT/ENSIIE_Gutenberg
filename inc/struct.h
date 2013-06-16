@@ -1,8 +1,8 @@
 #ifndef H_STRUCT
 #define H_STRUCT
 
-// float totalPD=0.0;
-// float totalPU=0.0;
+float totalPD;
+float totalPU;
 
 typedef struct Coord Coord;
 struct Coord{

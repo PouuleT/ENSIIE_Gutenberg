@@ -8,18 +8,18 @@
 // Affichage d'un Vector
 void printVector(Vector *v)
 {
-    // float distParcourue = dist(v->a,v->b);
-    // if(v->type)
-    // {
-    //     printf("\nPU");
-    //     totalPU += distParcourue;
-    // }
-    // else
-    // {
-    //     printf("PD");
-    //     totalPD += distParcourue;
-    // }
-    // printf(" A[%d,%d] B[%d,%d] DIST : %f\n", v->a.x, v->a.y, v->b.x, v->b.y, distParcourue );
+    float distParcourue = dist(v->a,v->b);
+    if(v->type)
+    {
+        printf("\nPU");
+        totalPU += distParcourue;
+    }
+    else
+    {
+        printf("PD");
+        totalPD += distParcourue;
+    }
+    printf(" A[%d,%d] B[%d,%d] DIST : %f\n", v->a.x, v->a.y, v->b.x, v->b.y, distParcourue );
 }
 
 // Affichage d'un Coord

@@ -145,7 +145,7 @@ int main(int argc, char* argv[])
         fclose(newFile);
     }
 
-    //printf("\nDistance totale PD : %f, PU : %f\n",totalPD, totalPU);
+    printf("\nDistance totale PD : %.2f, PU : %.2f\n",totalPD, totalPU);
     printf("\nNouveau fichier créé, on ferme tout et on quitte. THE END.\n\n");
 
     for(k=0;k<i;k++)
