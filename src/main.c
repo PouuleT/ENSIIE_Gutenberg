@@ -9,8 +9,6 @@
 #include "../inc/outils.h"
 #include "../inc/pwet.h"
 
-
-
 int main(int argc, char* argv[])
 {
     FILE* matrice = fopen(argv[1],"r");
@@ -161,10 +159,6 @@ int main(int argc, char* argv[])
     }
     free(newFigure);
 
-    //printf("\nDistance totale PD : %f, PU : %f\n",totalPD, totalPU);
-    printf("\nNouveau fichier créé, on ferme tout et on quitte. THE END.\n\n");
-
-    fclose(newFile);
     fclose(matrice);
 
     return 0;
