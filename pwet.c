@@ -659,7 +659,7 @@ Shape** optimiseFigure(Shape **Figure, int size)
 int main(int argc, char* argv[])
 {
     FILE* matrice = fopen(argv[1],"r");
-<<<<<<< HEAD
+
     char *fileNew = malloc(sizeof(char)*(strlen(argv[1])+4));
     strcpy(fileNew,"new_");
     strcat(fileNew,argv[1]);                        // Le nouveau fichier sera nommé à l'identique, avec new_ devant
@@ -766,15 +766,12 @@ int main(int argc, char* argv[])
 
     printFigure(Figure,j);              // On affiche la Figure
 
-<<<<<<< HEAD
     printf("\nTODO : Maintenant qu'on a recuperer tous les points, on optimise\n");
 
     optiPremierPoint(Figure,j);
     printf("\nMaintenant que les points sont dans un ordre optimal, on reforme la structure et on réécrit tout dans le nouveau fichier\n");
 
     recreateFile(Figure, j, newFile);
-=======
->>>>>>> opti
 
     if(onlyPrint == 1)
     {
@@ -814,13 +811,10 @@ int main(int argc, char* argv[])
     }
     free(newFigure);
 
-<<<<<<< HEAD
     printf("\nDistance totale PD : %f, PU : %f\n",totalPD, totalPU);
     printf("\nNouveau fichier créé, on ferme tout et on quitte. THE END.\n\n");
 
     fclose(newFile);
-=======
->>>>>>> opti
     fclose(matrice);
 
     return 0;
