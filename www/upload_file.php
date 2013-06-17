@@ -8,8 +8,8 @@
     <meta name="author" content="ENSIIE">
 
     <!-- Le styles -->
-    <script src="js/jquery-1.10.1.min.js"></script>
-    <script src="js/kinetic-v4.5.4.min.js"></script>
+    <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+    
     <link href="css/bootstrap.css" rel="stylesheet">
     <style type="text/css">
       body {
