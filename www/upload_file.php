@@ -122,9 +122,16 @@
       <div class="row">
         <div class="span4">
         </div>
-        <div class="span4">
-          <h2>Amélioration</h2>
-          <p>L'algorithme a améliorer la découpe, vous faisant gagner environ XXX secondes! </br>Si ça c'est pas génial? =)</p>
+        <div class="span4" style='width:600px;margin-left:20%'>
+          <h2>Temps de découpe</h2>
+            <p> Sélectionnez le matériel dans lequel vous effectuez la découpe :
+		<select id='materiel'>
+		<option value="defaut">---</option>
+		<option value="plexi">Plexiglas</option>
+		<option value="carton">Carton souple</option>
+		</select>
+       	</p>
+          <p>Le temps de découpe approximatif pour cette forme est de <span id='tempsDecoupe'>---</span> secondes.
        	</div>
         <div class="span4">
         </div>
