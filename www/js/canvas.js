@@ -1,6 +1,5 @@
-
 // On récupère le canvas sur la page
-var cv = document.getElementById('shape');
+var cv = $('#shape');
 var ctx = cv.getContext("2d");
 
 // Stock des coordonnées
