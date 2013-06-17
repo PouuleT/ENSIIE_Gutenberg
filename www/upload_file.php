@@ -66,7 +66,7 @@
         <h1>Fichier optimisé!</h1>
 <hr>
         <p>Votre fichier a bien été analysé. Nous avons appliqué un algorithme ayant pour but d'optimiser les déplacements de la tête de gravure. Cliquez ci-dessous afin de télécharger le nouveau fichier généré. Vous pourrez alors l'imprimer tout simplement avec la gravure.</p>
-
+	<canvas id="shape" width="900" height="700"></canvas>
 <?php
     $allowedExts = array("prn");
     $extension = end(explode(".", $_FILES["file"]["name"]));
