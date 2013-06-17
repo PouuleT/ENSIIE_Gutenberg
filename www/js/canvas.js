@@ -7,6 +7,13 @@ var ctx = cv.getContext("2d");
 var coordX;
 var coordY;
 
+var distancePU;
+var distancePD;
+
+var materiel = "defaut";
+
+$("#tempsDecoupe").html("---");
+
 // Pour chaque valeur du tableau de résultats $result aka res
 $.each(res, function(cle, val){
     
@@ -35,8 +42,32 @@ $.each(res, function(cle, val){
         if (coordX && coordY) ctx.moveTo(coordX,coordY);
 
     }
+    
+    if (val.indexOf("Distance totale PD") != -1){
+        distancePD = Number(val.substring(val.indexOf('Distance totale PD')+21, val.indexOf(", PU : ")));
+    }
+    
+    if (val.indexOf(", PU : ") != -1){
+        distancePU = Number(val.substr(val.indexOf(", PU : ")+7));
+    }
 
 });
 
 // Et on dessine !
 ctx.stroke();
+
+// Selection du matériel
+$("#materiel").on('click', function(){
+
+    materiel = $("#materiel")[0].value;
+    
+    // Calculs de la durée
+    if (materiel == "plexi") $("#tempsDecoupe").html(Math.round(0.007*distancePD*2.27+0.007*distancePU*0.1));
+    else if (materiel == "carton") $("#tempsDecoupe").html(Math.round(0.007*distancePD*0.16+0.007*distancePU*0.1));
+    else $("#tempsDecoupe").html("---");
+
+});
+
+
+
+
