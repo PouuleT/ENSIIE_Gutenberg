@@ -8,6 +8,8 @@
     <meta name="author" content="ENSIIE">
 
     <!-- Le styles -->
+    <script src="js/jquery-1.10.1.min.js"></script>
+    <script src="js/kinetic-v4.5.4.min.js"></script>
     <link href="css/bootstrap.css" rel="stylesheet">
     <style type="text/css">
       body {
@@ -95,8 +97,15 @@
         }
         chdir('upload');
         exec('./prog '.$_FILES["file"]["name"],$result);
-        echo "Result : <br>";
-        print_r($result);
+        // echo "Result : <br>";
+        // print_r($result);
+        
+        echo "<script type='text/javascript'> var res = new Array();";
+            foreach ($result as $cle =>$val){
+                echo "res[".$cle."] = \"".$val."\"\n;";   
+            }
+        echo "</script>";        
+        
         exec('rm ./'.$_FILES["file"]["name"], $resultRM);
 //        print_r($resultRM);
 //        echo "Cliquez ici pour télécharger le nouveau fichier";
@@ -132,6 +141,7 @@
     <!-- Le javascript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
+    <script src="js/canvas.js"></script>
     <script src="../assets/js/jquery.js"></script>
     <script src="../assets/js/bootstrap-transition.js"></script>
     <script src="../assets/js/bootstrap-alert.js"></script>
